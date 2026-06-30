@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MineSpace Panel</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- xterm.js from CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <h2>MineSpace</h2>
+        <span class="subtext">GitHub Codespaces Panel</span>
+      </div>
+      <nav class="nav-menu">
+        <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
+        <button class="nav-btn" data-tab="plugins-mods">Plugins & Mods</button>
+        <button class="nav-btn" data-tab="filemanager">File Manager</button>
+        <button class="nav-btn" data-tab="backups">Backups</button>
+        <button class="nav-btn" data-tab="configuration">Configuration</button>
+      </nav>
+      <div class="status-footer">
+        <div><strong>Server:</strong> <span id="mc-status-text">Stopped</span></div>
+        <div><strong>Playit:</strong> <span id="playit-status-text">Stopped</span></div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Stats Bar -->
+      <header class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-label">CPU Usage</div>
+          <div class="stat-value" id="stat-cpu">0%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">RAM Usage</div>
+          <div class="stat-value" id="stat-ram">0%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label flex-stat">
+            <span>TPS</span>
+            <span id="stat-tps">20.00</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Players</div>
+          <div class="stat-value" id="stat-players">0 / 20</div>
+        </div>
+      </header>
+
+      <!-- Panel Tabs -->
+      <div class="panels-container">
+        <!-- 1. Dashboard Tab -->
+        <section id="tab-dashboard" class="tab-panel active">
+          <div class="dashboard-grid">
+            <div class="panel-card console-container">
+              <div class="card-header">
+                <h3>Server Console</h3>
+                <div class="actions">
+                  <button id="btn-start" class="btn btn-success">Start</button>
+                  <button id="btn-stop" class="btn btn-danger">Stop</button>
+                  <button id="btn-restart" class="btn btn-warning">Restart</button>
+                </div>
+              </div>
+              <div id="terminal"></div>
+              <div class="console-input-row">
+                <input type="text" id="console-input" placeholder="Type a command (e.g. op Steve) and press Enter..." />
+                <button id="btn-send-cmd" class="btn btn-primary">Send</button>
+              </div>
+            </div>
+
+            <div class="panel-card playit-container">
+              <div class="card-header">
+                <h3>Playit Tunnel Connection</h3>
+                <div class="actions">
+                  <button id="btn-playit-start" class="btn btn-success btn-sm">Start Playit</button>
+                  <button id="btn-playit-stop" class="btn btn-danger btn-sm">Stop Playit</button>
+                </div>
+              </div>
+              <div class="playit-details">
+                <div class="detail-row">
+                  <strong>Status:</strong>
+                  <span id="playit-status-info" class="badge">Checking...</span>
+                </div>
+                <div class="detail-row">
+                  <strong>Tunnel Address:</strong>
+                  <span id="playit-address" class="selectable-address">No Active Tunnel</span>
+                </div>
+                <div class="detail-row">
+                  <strong>Host Address:</strong>
+                  <span id="playit-minecraft" class="selectable-address">Awaiting playit initialization</span>
+                </div>
+                <div class="detail-row" id="claim-url-wrapper" style="display:none;">
+                  <strong>Claim URL:</strong>
+                  <a href="#" id="playit-claim-link" target="_blank">Click here to claim tunnel</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Plugins & Mods Tab -->
+        <section id="tab-plugins-mods" class="tab-panel">
+          <div class="dual-column">
+            <!-- Plugins Manager -->
+            <div class="panel-card">
+              <div class="card-header">
+                <h3>Plugins (.jar)</h3>
+                <div class="upload-wrapper">
+                  <input type="file" id="upload-plugin-input" accept=".jar" style="display:none;" />
+                  <button onclick="document.getElementById('upload-plugin-input').click()" class="btn btn-primary btn-sm">Upload Plugin</button>
+                </div>
+              </div>
+              <ul id="plugins-list" class="manager-list"></ul>
+            </div>
+
+            <!-- Mods Manager -->
+            <div class="panel-card">
+              <div class="card-header">
+                <h3>Fabric Mods (.jar)</h3>
+                <div class="upload-wrapper">
+                  <input type="file" id="upload-mod-input" accept=".jar" style="display:none;" />
+                  <button onclick="document.getElementById('upload-mod-input').click()" class="btn btn-primary btn-sm">Upload Mod</button>
+                </div>
+              </div>
+              <ul id="mods-list" class="manager-list"></ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. File Manager Tab -->
+        <section id="tab-filemanager" class="tab-panel">
+          <div class="panel-card filemanager-container">
+            <div class="card-header flex-header">
+              <h3>File Manager</h3>
+              <div class="file-path-nav">
+                <span id="current-dir-label">/</span>
+                <button id="btn-file-up" class="btn btn-secondary btn-sm">Up</button>
+              </div>
+            </div>
+            <div class="filemanager-layout">
+              <div class="file-list-view">
+                <table class="file-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Size</th>
+                      <th>Last Modified</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="files-table-body"></tbody>
+                </table>
+              </div>
+              <div class="file-editor-view" id="file-editor-box" style="display: none;">
+                <div class="editor-header">
+                  <span id="editor-file-title">Editing: ...</span>
+                  <div>
+                    <button id="btn-save-file" class="btn btn-success btn-sm">Save</button>
+                    <button id="btn-close-editor" class="btn btn-secondary btn-sm">Close</button>
+                  </div>
+                </div>
+                <textarea id="file-editor-content" rows="20"></textarea>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. Backups Tab -->
+        <section id="tab-backups" class="tab-panel">
+          <div class="panel-card">
+            <div class="card-header">
+              <h3>System Backups</h3>
+              <button id="btn-create-backup" class="btn btn-primary">Create Backup</button>
+            </div>
+            <table class="backup-table">
+              <thead>
+                <tr>
+                  <th>Backup File</th>
+                  <th>Size</th>
+                  <th>Created At</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="backups-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 5. Configuration Tab -->
+        <section id="tab-configuration" class="tab-panel">
+          <div class="panel-card">
+            <div class="card-header">
+              <h3>Server Settings</h3>
+            </div>
+            <form id="config-form" class="config-settings-form">
+              <div class="form-group">
+                <label for="cfg-server-type">Server Type/Engine</label>
+                <select id="cfg-server-type">
+                  <option value="paper">Paper MC (Recommended)</option>
+                  <option value="purpur">Purpur MC</option>
+                  <option value="fabric">Fabric Server</option>
+                  <option value="vanilla">Vanilla Minecraft</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="cfg-server-version">Server Version</label>
+                <input type="text" id="cfg-server-version" value="1.20.4" required placeholder="e.g. 1.20.4" />
+              </div>
+              <div class="form-group">
+                <label for="cfg-ram">Memory Limit (RAM)</label>
+                <input type="text" id="cfg-ram" value="4G" required placeholder="e.g. 2G, 4G, 8G" />
+              </div>
+              <div class="form-group">
+                <label for="cfg-online-mode">Online Mode (Premium Account Verification)</label>
+                <select id="cfg-online-mode">
+                  <option value="false">Disabled (Offline Mode)</option>
+                  <option value="true">Enabled (Online Mode)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="cfg-world-name">World Name</label>
+                <input type="text" id="cfg-world-name" value="world" required />
+              </div>
+              <div class="form-group">
+                <label for="cfg-java-flags">Custom Java Startup Flags</label>
+                <textarea id="cfg-java-flags" rows="3"></textarea>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-success">Save Configuration</button>
+                <button type="button" id="btn-trigger-update" class="btn btn-warning">Download Jar/Update</button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
